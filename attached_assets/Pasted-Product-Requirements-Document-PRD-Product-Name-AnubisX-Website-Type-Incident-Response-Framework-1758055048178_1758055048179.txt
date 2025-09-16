@@ -1,0 +1,175 @@
+Product Requirements Document (PRD)
+
+Product Name: AnubisX Website
+Type: Incident Response Framework Platform
+
+1. Purpose
+
+AnubisX is a modern incident response framework website. It centralizes detection rules, downloadable playbooks, and automated workflows into one accessible platform. The site does not rely on a database. All content will be uploaded as static files (PDFs, images).
+
+2. Objectives
+
+Provide downloadable IR and Investigation playbooks as PDFs.
+
+Deliver automated response workflows as static cards with screenshots and explanations.
+
+Organize detection rules by MITRE ATT&CK mapping and detection language.
+
+Use modern, animated, and responsive design.
+
+Showcase the AnubisX team in an interactive About Us page.
+
+3. Target Users
+
+SOC Analysts
+
+Incident Responders
+
+Threat Hunters
+
+Security Engineers
+
+Cybersecurity Students and Researchers
+
+4. Core Features
+4.1 Detection Rules
+
+Static section with categorized rules.
+
+Organized by MITRE ATT&CK tactics and techniques.
+
+Grouped by detection language (Sigma, YARA, Snort, Suricata).
+
+Client-side search and filtering.
+
+Each rule card shows:
+
+Title
+
+MITRE mapping
+
+Rule snippet
+
+Language tag
+
+4.2 IR Playbooks (PDF-based)
+
+Collection of incident response playbooks in PDF format.
+
+Each playbook card includes:
+
+Title
+
+Short description
+
+Preview thumbnail
+
+Download button for the PDF
+
+Search and filter by category (malware, phishing, insider threat, ransomware).
+
+4.3 Investigation Playbooks (PDF-based)
+
+Same structure as IR playbooks.
+
+Playbooks uploaded as PDFs.
+
+Each card includes:
+
+Title
+
+Short description
+
+Preview thumbnail
+
+Download button
+
+Search and filter available.
+
+4.4 Automated Response Workflows
+
+Each workflow is presented as a card.
+
+Each card contains:
+
+Title
+
+Short description
+
+Screenshots showing workflow in action
+
+Step-by-step written explanation below the screenshot(s)
+
+Search and filter by tool (SIEM, EDR, Firewall, SOAR).
+
+4.5 About Us Page
+
+Team members displayed as clickable animated cards.
+
+Hover or click reveals role, bio, and social links.
+
+Responsive grid layout.
+
+5. Non-Functional Requirements
+
+No database integration, all PDFs and images stored in /public or /assets.
+
+Fast load times and lightweight performance.
+
+Smooth animations for navigation and hover effects.
+
+Responsive and mobile-friendly design.
+
+Easy to maintain and expand by uploading new PDFs or images.
+
+6. Design Guidelines
+
+Dark theme with vibrant accent colors.
+
+Animated transitions for navigation and cards.
+
+Grid layouts for detection rules, playbooks, and workflows.
+
+Hover states for interactivity.
+
+Icons for quick recognition of categories.
+
+7. Technical Requirements
+
+Frontend: React + TailwindCSS + Framer Motion.
+
+Content: PDFs and screenshots stored statically.
+
+Search: Client-side fuzzy search (Fuse.js).
+
+Hosting: Static hosting (Vercel, Netlify, GitHub Pages).
+
+No backend or database required.
+
+8. User Flow
+
+User lands on homepage with animated intro.
+
+Navigation bar leads to:
+
+Detection Rules (filter + search)
+
+IR Playbooks (PDF downloads)
+
+Investigation Playbooks (PDF downloads)
+
+Automated Response Workflows (cards with screenshots + explanations)
+
+About Us (animated team cards)
+
+User browses cards, downloads PDFs, or views workflow explanations.
+
+9. Success Metrics
+
+Number of PDF downloads.
+
+Search activity per session.
+
+Engagement with workflow cards.
+
+Interaction with About Us page.
