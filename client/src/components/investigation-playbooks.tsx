@@ -1,13 +1,24 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Download, Clock, Search, Filter, Cpu } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { investigationPlaybooks } from "@/lib/data";
 
 export default function InvestigationPlaybooks() {
-  const downloadPlaybook = (playbookId: string, title: string) => {
-    // In a real implementation, this would download the actual PDF
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState("all");
+
+  const filters = [
+    { id: "all", label: "All Playbooks" },
+    { id: "forensics", label: "Forensics" },
+    { id: "network", label: "Network" },
+    { id: "memory", label: "Memory" },
+  ];
+
+  const downloadPlaybook = (pdfUrl: string, title: string) => {
     const link = document.createElement('a');
-    link.href = '/sample-playbook.pdf';
+    link.href = pdfUrl;
     link.download = `${title.toLowerCase().replace(/\s+/g, '-')}.pdf`;
     document.body.appendChild(link);
     link.click();
@@ -27,6 +38,21 @@ export default function InvestigationPlaybooks() {
     }
   };
 
+  const filteredPlaybooks = investigationPlaybooks.filter(playbook => {
+    const categoryMatch =
+      activeFilter === "all" ||
+      playbook.category.toLowerCase() === activeFilter;
+
+    const query = searchQuery.toLowerCase();
+    const searchMatch =
+      !query ||
+      playbook.title.toLowerCase().includes(query) ||
+      playbook.description.toLowerCase().includes(query) ||
+      playbook.category.toLowerCase().includes(query);
+
+    return categoryMatch && searchMatch;
+  });
+
   return (
     <section id="investigation-playbooks" className="py-20 bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -44,11 +70,46 @@ export default function InvestigationPlaybooks() {
           </p>
         </motion.div>
 
+        {/* Search Bar */}
+        <div className="mb-8 flex justify-center">
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search investigations..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+              data-testid="investigation-search-input"
+            />
+          </div>
+        </div>
+
+        {/* Category Filters */}
+        <div className="mb-12 flex flex-wrap gap-4 justify-center">
+          {filters.map((filter) => (
+            <Button
+              key={filter.id}
+              variant={activeFilter === filter.id ? "default" : "outline"}
+              onClick={() => setActiveFilter(filter.id)}
+              className={`${
+                activeFilter === filter.id
+                  ? "bg-secondary/20 text-secondary border-secondary/50 hover:bg-secondary hover:text-secondary-foreground"
+                  : "bg-muted hover:bg-primary/20 text-muted-foreground hover:text-primary border-border"
+              } transition-all duration-200`}
+              data-testid={`filter-${filter.id}`}
+            >
+              {filter.label}
+            </Button>
+          ))}
+        </div>
+
         {/* Investigation Playbooks Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {investigationPlaybooks.map((playbook, index) => (
+          {filteredPlaybooks.map((playbook, index) => (
             <motion.div
               key={playbook.id}
+              // ... (rest of the card component is unchanged)
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: index * 0.1 }}
@@ -93,7 +154,7 @@ export default function InvestigationPlaybooks() {
                     <span>{playbook.readingTime}</span>
                   </div>
                   <Button
-                    onClick={() => downloadPlaybook(playbook.id, playbook.title)}
+                    onClick={() => downloadPlaybook(playbook.pdfUrl, playbook.title)}
                     className="bg-secondary hover:bg-secondary/80 text-secondary-foreground px-4 py-2 text-sm font-semibold transition-all duration-300 flex items-center space-x-2"
                     data-testid={`download-investigation-${playbook.id}`}
                   >

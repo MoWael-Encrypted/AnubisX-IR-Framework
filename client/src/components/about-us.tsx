@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Github, Linkedin, Twitter } from "lucide-react";
+import { Briefcase,Linkedin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { teamMembers } from "@/lib/data";
 
@@ -68,18 +68,11 @@ export default function AboutUs() {
                       <Linkedin className="w-5 h-5" />
                     </a>
                     <a 
-                      href={member.twitter}
+                      href={member.portfolio}
                       className={`text-muted-foreground hover:text-${member.color} transition-colors`}
-                      data-testid={`twitter-${member.id}`}
+                      data-testid={`portfolio-${member.id}`}
                     >
-                      <Twitter className="w-5 h-5" />
-                    </a>
-                    <a 
-                      href={member.github}
-                      className={`text-muted-foreground hover:text-${member.color} transition-colors`}
-                      data-testid={`github-${member.id}`}
-                    >
-                      <Github className="w-5 h-5" />
+                      <Briefcase className="w-5 h-5" />
                     </a>
                   </div>
                 </div>

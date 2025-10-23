@@ -1,28 +1,54 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Download, Clock, FileText } from "lucide-react";
+import { Download, Clock, FileText, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { irPlaybooks } from "@/lib/data";
 
 export default function IRPlaybooks() {
   const [activeFilter, setActiveFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const filters = [
     { id: "all", label: "All Playbooks" },
-    { id: "malware", label: "Malware" },
-    { id: "phishing", label: "Phishing" },
-    { id: "ransomware", label: "Ransomware" },
-    { id: "insider-threat", label: "Insider Threat" },
+    { id: "cloud-security", label: "Cloud Security" },
+    { id: "endpoint-security", label: "Endpoint Security" },
+    { id: "email-security", label: "Email Security" },
+    { id: "web-security", label: "Web Security" },
   ];
 
-  const filteredPlaybooks = activeFilter === "all" 
-    ? irPlaybooks 
-    : irPlaybooks.filter(playbook => playbook.category.toLowerCase().replace(/\s+/g, '-') === activeFilter);
+  const filteredPlaybooks = irPlaybooks.filter(playbook => {
+    // 1. Check if it matches the active category filter
+    const categoryMatch = 
+      activeFilter === "all" || 
+      playbook.category.toLowerCase().replace(/\s+/g, '-') === activeFilter;
 
-  const downloadPlaybook = (playbookId: string, title: string) => {
-    // In a real implementation, this would download the actual PDF
+    // 2. Check if it matches the search query (case-insensitive)
+    const query = searchQuery.toLowerCase();
+    
+    // Search within title, description, and category
+    const textMatch = 
+      playbook.title.toLowerCase().includes(query) ||
+      playbook.description.toLowerCase().includes(query) ||
+      playbook.category.toLowerCase().includes(query);
+
+    // NEW: Search within MITRE mappings (ID and Name)
+    const mitreMatch = playbook.mitreMapping?.some(tactic => 
+      tactic.techniques.some(technique => 
+        technique.id.toLowerCase().includes(query) ||
+        technique.name.toLowerCase().includes(query)
+      )
+    ) || false; // Default to false if no mitreMapping exists
+
+    const searchMatch = !query || textMatch || mitreMatch;
+
+    // 3. The playbook must match both the category and search filters
+    return categoryMatch && searchMatch;
+  });
+
+  const downloadPlaybook = (pdfUrl: string, title: string) => {
     const link = document.createElement('a');
-    link.href = '/sample-playbook.pdf';
+    link.href = pdfUrl;
     link.download = `${title.toLowerCase().replace(/\s+/g, '-')}.pdf`;
     document.body.appendChild(link);
     link.click();
@@ -46,6 +72,21 @@ export default function IRPlaybooks() {
           </p>
         </motion.div>
 
+        {/* Search Bar */}
+        <div className="mb-8 flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search by title, MITRE ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+              data-testid="playbook-search-input"
+            />
+          </div>
+        </div>
+        
         {/* Category Filters */}
         <div className="mb-8 flex flex-wrap gap-4 justify-center">
           {filters.map((filter) => (
@@ -82,9 +123,9 @@ export default function IRPlaybooks() {
             >
               {/* PDF Thumbnail */}
               <div className={`aspect-[4/3] bg-gradient-to-br ${
-                playbook.category === "Malware" ? "from-destructive/10 to-primary/10" :
-                playbook.category === "Phishing" ? "from-secondary/10 to-accent/10" :
-                playbook.category === "Ransomware" ? "from-accent/10 to-destructive/10" :
+                playbook.category === "Endpoint Security" ? "from-destructive/10 to-primary/10" :
+                playbook.category === "Email Security" ? "from-secondary/10 to-accent/10" :
+                playbook.category === "Web Security" ? "from-accent/10 to-destructive/10" :
                 "from-primary/10 to-secondary/10"
               } flex items-center justify-center border-b border-border`}>
                 <div className="text-center">
@@ -101,9 +142,9 @@ export default function IRPlaybooks() {
                     {playbook.title}
                   </h3>
                   <span className={`text-xs px-2 py-1 rounded-full ${
-                    playbook.category === "Malware" ? "bg-destructive/20 text-destructive" :
-                    playbook.category === "Phishing" ? "bg-accent/20 text-accent" :
-                    playbook.category === "Ransomware" ? "bg-destructive/20 text-destructive" :
+                    playbook.category === "Endpoint Security" ? "bg-destructive/20 text-destructive" :
+                    playbook.category === "Email Security" ? "bg-accent/20 text-accent" :
+                    playbook.category === "Web Security" ? "bg-destructive/20 text-destructive" :
                     "bg-secondary/20 text-secondary"
                   }`}>
                     {playbook.category}
@@ -120,7 +161,7 @@ export default function IRPlaybooks() {
                     <span>{playbook.readingTime}</span>
                   </div>
                   <Button
-                    onClick={() => downloadPlaybook(playbook.id, playbook.title)}
+                    onClick={() => downloadPlaybook(playbook.pdfUrl, playbook.title)}
                     className="bg-primary hover:bg-primary/80 text-primary-foreground px-4 py-2 text-sm font-semibold transition-all duration-300 flex items-center space-x-2"
                     data-testid={`download-${playbook.id}`}
                   >

@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 import { detectionRules } from "@/lib/data";
 
 export default function DetectionRules() {
   const [activeFilter, setActiveFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [visibleRules, setVisibleRules] = useState(9);
 
   const filters = [
@@ -15,9 +18,24 @@ export default function DetectionRules() {
     { id: "suricata", label: "Suricata" },
   ];
 
-  const filteredRules = activeFilter === "all" 
-    ? detectionRules 
-    : detectionRules.filter(rule => rule.language.toLowerCase() === activeFilter);
+  const filteredRules = detectionRules.filter(rule => {
+    // 1. Check if it matches the active language filter
+    const languageMatch =
+      activeFilter === "all" ||
+      rule.language.toLowerCase() === activeFilter;
+
+    // 2. Check if it matches the search query (case-insensitive)
+    const query = searchQuery.toLowerCase();
+    const searchMatch =
+      !query ||
+      rule.title.toLowerCase().includes(query) ||
+      rule.description.toLowerCase().includes(query) ||
+      rule.mitreTechnique.toLowerCase().includes(query) ||
+      rule.category.toLowerCase().includes(query);
+
+    // 3. The rule must match both
+    return languageMatch && searchMatch;
+  });
 
   const displayedRules = filteredRules.slice(0, visibleRules);
 
@@ -41,6 +59,24 @@ export default function DetectionRules() {
             organized by detection language and threat tactics.
           </p>
         </motion.div>
+
+        {/* Search Bar */}
+        <div className="mb-8 flex justify-center">
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search rules..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setVisibleRules(9); // Reset pagination on search
+              }}
+              className="pl-10"
+              data-testid="rule-search-input"
+            />
+          </div>
+        </div>
 
         {/* Filters */}
         <div className="mb-8 flex flex-wrap gap-4 justify-center">
@@ -137,4 +173,4 @@ export default function DetectionRules() {
       </div>
     </section>
   );
-}
+} 
