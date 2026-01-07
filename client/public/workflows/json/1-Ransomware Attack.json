@@ -1,0 +1,173 @@
+{
+  "name": "1-Ransomware Attack",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "ransomware-alert",
+        "options": {}
+      },
+      "id": "72f783ef-944c-4dd9-b356-2eff9247bb04",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -1440,
+        448
+      ],
+      "webhookId": "8e174a43-c78f-483d-bae4-f85e24217574"
+    },
+    {
+      "parameters": {
+        "functionCode": "if ($headers[\"x-siem-token\"] !== $env.SIEM_SECRET) {\n  throw new Error(\"Invalid Webhook Secret\");\n}\n\nif (!$json.hash || !$json.endpoint) {\n  throw new Error(\"Missing required fields: hash or endpoint\");\n}\n\nreturn [{ json: $json }];"
+      },
+      "id": "45f60913-54fd-4da9-83d8-0d23043168de",
+      "name": "Validate Payload",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -1184,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "headerAuth",
+        "url": "https://www.virustotal.com/api/v3/files/{{$json[\"hash\"]}}",
+        "options": {}
+      },
+      "id": "908cdd1b-1a2c-4139-abab-bda32c6e9428",
+      "name": "Check Hash in VirusTotal",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -944,
+        448
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": null,
+          "name": "VirusTotal API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$json[\"data\"].attributes.last_analysis_stats.malicious}}",
+              "operation": "larger"
+            }
+          ]
+        }
+      },
+      "id": "e3fd19bb-2f6f-4d7d-aabf-3ac36ac7a718",
+      "name": "Is Malicious?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -688,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "channel": "#soc-alerts",
+        "text": "🚨 *Ransomware Detected!*\n\n*Endpoint:* {{$json[\"endpoint\"]}}\n*File Hash:* {{$json[\"hash\"]}}\n*Detection Count:* {{$json[\"data\"].attributes.last_analysis_stats.malicious}}",
+        "otherOptions": {},
+        "attachments": []
+      },
+      "id": "b167544f-1199-4fe3-adb1-24515eaef069",
+      "name": "Send Slack Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [
+        -432,
+        336
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": null,
+          "name": "Slack Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "return [{ json: { status: \"File appears clean, no alert sent.\", hash: $json.hash, endpoint: $json.endpoint } }];"
+      },
+      "id": "4adaa57e-c12f-4549-a22d-62db81db129c",
+      "name": "Log Clean File",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -432,
+        544
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Payload": {
+      "main": [
+        [
+          {
+            "node": "Check Hash in VirusTotal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Hash in VirusTotal": {
+      "main": [
+        [
+          {
+            "node": "Is Malicious?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Malicious?": {
+      "main": [
+        [
+          {
+            "node": "Send Slack Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Clean File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ffe673e8-9805-49c2-9e28-aa4ed14e4d14",
+  "meta": {
+    "instanceId": "2e054795eb266fa430683bb616f3e195ac30a3ed41cf98309fb965ae2fab7aba"
+  },
+  "id": "rYQXyQkHvA6iK0TM",
+  "tags": []
+}

@@ -1,0 +1,167 @@
+{
+  "name": "2-Phishing Email Attack",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "phishing-email",
+        "options": {}
+      },
+      "id": "0210fd57-866f-4cc0-9ca1-6c37435bcb60",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -1568,
+        320
+      ],
+      "webhookId": "0d19deb6-fc82-453b-b6fe-2ead10def7df"
+    },
+    {
+      "parameters": {
+        "functionCode": "if ($headers[\"x-siem-token\"] !== $env.SIEM_SECRET) {\n  throw new Error(\"Invalid Webhook Secret\");\n}\n\nif (!$json.url || !$json.sender) {\n  throw new Error(\"Missing required fields: url or sender\");\n}\n\nreturn [{ json: $json }];"
+      },
+      "id": "d7fd0169-fce4-4409-bbb4-b3cff66e4b70",
+      "name": "Validate Payload",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -1312,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://checkurl.phishtank.com/checkurl/",
+        "jsonParameters": true,
+        "options": {}
+      },
+      "id": "4085d21a-9ed5-4a54-bdef-d4215644dde2",
+      "name": "Check URL in PhishTank",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        -1056,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.results.in_database}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "c24d0161-00e3-49ae-8197-92dfe483d92e",
+      "name": "Is Phishing?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -816,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "channel": "#soc-alerts",
+        "text": "⚠️ *Phishing Email Detected!*\n\n*Sender:* {{$json[\"sender\"]}}\n*URL:* {{$json[\"url\"]}}\n*Subject:* {{$json[\"subject\"] || \"N/A\"}}",
+        "otherOptions": {},
+        "attachments": []
+      },
+      "id": "6aeb0ddb-654c-4d03-876c-70b714a3017b",
+      "name": "Send Slack Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        208
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": null,
+          "name": "Slack Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "return [{ json: { status: \"Clean email, no phishing detected.\", sender: $json.sender, url: $json.url } }];"
+      },
+      "id": "7b5a773c-3bee-473c-8f05-b94a3e64ae9c",
+      "name": "Log Clean Email",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        416
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Validate Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Payload": {
+      "main": [
+        [
+          {
+            "node": "Check URL in PhishTank",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check URL in PhishTank": {
+      "main": [
+        [
+          {
+            "node": "Is Phishing?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Phishing?": {
+      "main": [
+        [
+          {
+            "node": "Send Slack Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Clean Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "77f4d998-e709-43df-95d7-b8e95be0978f",
+  "meta": {
+    "instanceId": "2e054795eb266fa430683bb616f3e195ac30a3ed41cf98309fb965ae2fab7aba"
+  },
+  "id": "fDORQdxDWb1fGerw",
+  "tags": []
+}

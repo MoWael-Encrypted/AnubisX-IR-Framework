@@ -1,0 +1,196 @@
+{
+  "name": "Monitor Security Logs for Failed Login Attempts",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "595edeea-d50b-40ec-af39-b1b9dd43251d",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        96,
+        112
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "url": "https://api.yourlogserver.com/logs/recent?limit=100",
+        "options": {}
+      },
+      "id": "7cc6473d-b225-4832-9a36-a051826a8f58",
+      "name": "Fetch Logs",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        320,
+        112
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "jsCode": "const failedLogins = $json.data.filter(log => log.event === 'login_failure');\nconst uniqueIps = [...new Set(failedLogins.map(log => log.ip))];\nconst loginFailureCount = failedLogins.length;\n\nreturn [{\n    json: {\n        loginFailureCount,\n        uniqueIps,\n        firstFailedAttemptTime: failedLogins[0]?.timestamp,\n        lastFailedAttemptTime: failedLogins[loginFailureCount - 1]?.timestamp,\n        summary: `Detected ${loginFailureCount} failed login attempts from ${uniqueIps.length} unique IP(s): ${uniqueIps.join(', ')}`\n    }\n}];"
+      },
+      "id": "d7169e09-c095-451d-80cb-1295a3cae18a",
+      "name": "Count Failed Logins",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        544,
+        112
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "af403d1c-04f9-4b8a-9575-f39b7c14aa2a",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "leftValue": "={{ $json.loginFailureCount }}",
+              "rightValue": 5
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6e4d0eb6-b4d3-4d47-a765-d413bbc312a0",
+      "name": "Failed Logins > Threshold?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        768,
+        112
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "select": "user",
+        "user": {
+          "__rl": true,
+          "mode": "id",
+          "value": "yourid12"
+        },
+        "text": "=🚨 *SECURITY ALERT: High Volume of Failed Logins Detected!* 🚨\\nSummary: *{{ $json.summary }}*\\nFirst attempt: *{{ $json.firstFailedAttemptTime }}*\\nLast attempt: *{{ $json.lastFailedAttemptTime }}",
+        "otherOptions": {}
+      },
+      "id": "d3b1185f-e852-452f-b986-ffec011b0d02",
+      "name": "Send Anomaly Alert",
+      "type": "n8n-nodes-base.slack",
+      "position": [
+        992,
+        32
+      ],
+      "webhookId": "dffde98f-80a8-4153-b925-af9603c73246",
+      "typeVersion": 2.3
+    },
+    {
+      "parameters": {
+        "content": "## Flow",
+        "height": 304,
+        "width": 1232,
+        "color": 3
+      },
+      "id": "065fbbfb-c167-4a1b-8e52-d05f96d3ef22",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "# 🕵️ Simple Log Anomaly Detector 🧠\n\n* **Problem Solved:**\n    Detecting cyberattacks like brute-force or unauthorized login attempts early is crucial. However, the manual process of sifting through system logs to find suspicious patterns—such as \"repeated failed logins\" or \"access from unusual locations\"—is a tedious, time-consuming, and often ineffective task. These anomalous patterns can easily be missed, giving attackers a window to operate undetected.\n\n* **Solution Overview:**\n    This n8n workflow provides a powerful yet concise solution with **basic SIEM (Security Information and Event Management) functionality**. It periodically pulls logs from a specified source, processes the data, and **looks for unusual patterns, such as a high volume of failed login attempts in a short period**. If this suspicious activity exceeds a set threshold, the workflow sends a **detailed alert to Slack**. This gives your team proactive, early detection of potential threats without the burden of manual log review.\n\n* **For Whom:**\n    This automation is ideal for:\n    * **IT Teams and SysAdmins:** To monitor logs for anomalies on servers and applications.\n    * **Security Specialists:** As a simple, effective early-warning tool for common attacks.\n    * **DevOps Teams:** To track unusual activity in staging or production environments.\n    * **Any Business (especially SMEs):** That manages its own servers and needs an effective way to enhance security without a large investment in SIEM tools.\n\n### Scope\n* **What it does:**\n    * Runs on a customizable schedule (e.g., every 15 minutes).\n    * Pulls log data from a specified external source via an API endpoint.\n    * Processes the log data to filter and count specific events (e.g., login failures).\n    * Checks if the count of these events exceeds a predefined threshold.\n    * Sends a detailed alert to a Slack channel if the threshold is breached.\n* **What it doesn't do:**\n    * This workflow **does not perform a comprehensive security analysis** of all log events. It is focused on a single, user-defined pattern (e.g., failed logins).\n    * It does not automatically block malicious IPs or take any other remediation actions. It is a detection and alerting tool only.\n    * It does not store historical log data for long-term analysis.\n\n### How It Works: The 5-Node Anomaly Detection Flow\n\nThis workflow efficiently processes logs to detect anomalies.\n\n1.  **Scheduled Check (Cron Node):**\n    * **Function:** This is the primary trigger. It schedules the workflow to run at a defined interval (e.g., every 15 minutes).\n    * **Process:** The `Cron` node automatically starts the workflow on its schedule, ensuring logs are routinely scanned for suspicious activity.\n\n2.  **Fetch Logs (HTTP Request Node):**\n    * **Function:** This node is responsible for retrieving logs from an external source.\n    * **Process:** It sends a request to your log API endpoint to get a batch of the most recent logs.\n\n3.  **Count Failed Logins (Code Node):**\n    * **Function:** This is the core of the detection logic. It processes the raw log data.\n    * **Process:** The JavaScript code filters the logs for a specific event (`\"login_failure\"`), counts the total, and identifies unique IPs involved. This information is then passed to the next node.\n\n4.  **Failed Logins > Threshold? (If Node):**\n    * **Function:** This node serves as the final filter. It checks if the total count of failed logins exceeds a threshold you set (e.g., more than 5 attempts).\n    * **Process:** If the count is greater than the threshold, the workflow is routed to the notification node. If not, the workflow ends safely.\n\n5.  **Send Anomaly Alert (Slack Node):**\n    * **Function:** This node sends an alert to your team if an anomaly is detected.\n    * **Process:** The alert sent to Slack includes a summary of the anomaly, such as the number of failed attempts and the IPs involved, enabling a swift response.",
+        "height": 1264,
+        "width": 1232,
+        "color": 5
+      },
+      "id": "f0f15347-d968-4141-a962-6bb1e8f8abb7",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        352
+      ],
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Fetch Logs": {
+      "main": [
+        [
+          {
+            "node": "Count Failed Logins",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Count Failed Logins": {
+      "main": [
+        [
+          {
+            "node": "Failed Logins > Threshold?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Failed Logins > Threshold?": {
+      "main": [
+        [
+          {
+            "node": "Send Anomaly Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f1be7f8c-308b-497e-b684-fb3107f74bad",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2e054795eb266fa430683bb616f3e195ac30a3ed41cf98309fb965ae2fab7aba"
+  },
+  "id": "YB94EwXBCJBbJ2q0",
+  "tags": []
+}

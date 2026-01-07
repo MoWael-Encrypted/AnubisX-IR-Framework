@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { workflows } from "@/lib/data";
-import { FileText, ExternalLink } from "lucide-react";
+import { FileText, ExternalLink, Download } from "lucide-react";
 
 export default function Workflows() {
   const [activeFilter, setActiveFilter] = useState("all");
@@ -19,6 +19,45 @@ export default function Workflows() {
     ? workflows 
     : workflows.filter(workflow => workflow.tool.toLowerCase() === activeFilter);
 
+  // Updated: Fetches the real JSON file from the public folder
+  const handleDownload = async (workflow: any) => {
+    if (!workflow.jsonPath) {
+      alert("No JSON file available for this workflow.");
+      return;
+    }
+
+    try {
+      // 1. Fetch the file from the path defined in data.ts
+      const response = await fetch(workflow.jsonPath);
+      
+      if (!response.ok) {
+        throw new Error(`File not found: ${workflow.jsonPath}`);
+      }
+
+      // 2. Get the file content as a Blob
+      const blob = await response.blob();
+      
+      // 3. Create a temporary URL for the Blob
+      const url = window.URL.createObjectURL(blob);
+      
+      // 4. Create a hidden link and trigger the download
+      const link = document.createElement("a");
+      link.href = url;
+      // Use the filename from the path, or fallback to ID
+      link.download = workflow.jsonPath.split('/').pop() || `${workflow.id}.json`;
+      
+      document.body.appendChild(link);
+      link.click();
+      
+      // 5. Clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Download failed:", error);
+      alert("Failed to download the workflow file. Please check if the file exists in the public folder.");
+    }
+  };
+
   return (
     <section id="workflows" className="py-20 bg-muted/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -29,9 +68,9 @@ export default function Workflows() {
           viewport={{ once: true }}
           className="text-center mb-12"
         >
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">Automated Response Workflows</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4">Automated Workflows</h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Pre-built automation workflows for common incident response scenarios. 
+            Pre-built automation workflows for common incident response or detection scenarios. 
             Visual guides with screenshots and implementation steps.
           </p>
         </motion.div>
@@ -82,6 +121,21 @@ export default function Workflows() {
                     }`}>
                       {workflow.tool}
                     </span>
+                    
+                    {/* Download JSON Button */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDownload(workflow)}
+                      // Disable if no path is provided in data.ts
+                      disabled={!workflow.jsonPath}
+                      className="gap-2 hover:bg-primary/10 hover:text-primary hover:border-primary"
+                      title="Download Workflow JSON"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span className="hidden sm:inline">JSON</span>
+                    </Button>
+
                     <Button
                       asChild
                       variant="outline"
@@ -90,7 +144,7 @@ export default function Workflows() {
                     >
                       <a href={workflow.pdfUrl} target="_blank" rel="noopener noreferrer">
                         <FileText className="w-4 h-4" />
-                        View Setup Guide
+                        <span className="hidden sm:inline">View Guide</span>
                         <ExternalLink className="w-3 h-3" />
                       </a>
                     </Button>
@@ -126,7 +180,7 @@ export default function Workflows() {
                     Implementation Steps:
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {workflow.steps.map((step, stepIndex) => (
+                    {workflow.steps.map((step: any, stepIndex: number) => (
                       <div
                         key={stepIndex}
                         className="bg-muted/50 rounded-lg p-4 border border-border/50 hover:border-border transition-colors"

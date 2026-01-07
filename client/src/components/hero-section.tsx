@@ -17,7 +17,7 @@ export default function HeroSection() {
   };
 
   const stats = [
-    { value: "5+", label: "Detection Rules", color: "primary" },
+    { value: "65+", label: "Detection Rules", color: "primary" },
     { value: "10+", label: "IR Playbooks", color: "secondary" },
     { value: "15+", label: "Workflows", color: "accent" },
     { value: "24/7", label: "Available", color: "primary" },

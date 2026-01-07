@@ -15,7 +15,7 @@ export default function DetectionRules() {
     { id: "sigma", label: "Sigma" },
     { id: "yara", label: "YARA" },
     { id: "snort", label: "Snort" },
-    { id: "suricata", label: "Suricata" },
+    { id: "eql", label: "EQL" }, 
   ];
 
   const filteredRules = detectionRules.filter(rule => {
@@ -144,14 +144,7 @@ export default function DetectionRules() {
               
               <div className="flex justify-between items-center">
                 <span className="text-xs text-muted-foreground">{rule.category}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-primary hover:text-primary/80 text-sm font-medium"
-                  data-testid={`view-rule-${rule.id}`}
-                >
-                  View Full Rule →
-                </Button>
+                {/* Button Removed */}
               </div>
             </motion.div>
           ))}
@@ -173,4 +166,4 @@ export default function DetectionRules() {
       </div>
     </section>
   );
-} 
+}
